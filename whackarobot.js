@@ -9,6 +9,12 @@ stork = null,
 group = null,
 orbitControls = null;
 
+
+var game = false;
+var gameTime = 60;
+var score = 0;
+var currentRobots = 0, maxRobots = 3;
+
 var robot_mixer = {};
 var deadAnimator;
 var morphs = [];
@@ -94,6 +100,11 @@ function animate() {
     {
         KF.update();
     }
+
+    if(robot_idle && currentRobots <= maxRobots){
+      addRandomRobot();
+    } else {
+    }
 }
 
 function run() {
@@ -146,9 +157,9 @@ function createScene(canvas) {
     camera = new THREE.PerspectiveCamera( 45, canvas.width / canvas.height, 1, 4000 );
     controls = new THREE.OrbitControls( camera );
     controls.screenSpacePanning = true;
-    controls.minDistance = 100;
-    controls.maxDistance = 100;
-    controls.maxPolarAngle = 0;
+    //controls.minDistance = 100;
+    //controls.maxDistance = 100;
+    //controls.maxPolarAngle = 0;
     camera.position.z = 10;
     controls.update();
     camera.position.set(0, 90, 0);
@@ -204,4 +215,14 @@ function createScene(canvas) {
 
     // Now add the group to our scene
     scene.add( root );
+}
+
+function addRandomRobot() {
+  var newRobot = robot_idle.clone();
+  console.log(robot_idle);
+  console.log(newRobot);
+  currentRobots++;
+  newRobot.position.set(0,-4,2);
+  scene.add(newRobot);
+  robot_idle.position.set(0,-4,8);
 }
