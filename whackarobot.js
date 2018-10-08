@@ -51,7 +51,7 @@ function loadFBX()
     {
         robot_mixer["idle"] = new THREE.AnimationMixer( scene );
         object.scale.set(0.02, 0.02, 0.02);
-        object.position.y -= 4;
+        object.position.y -= 18;
         object.traverse( function ( child ) {
             if ( child.isMesh ) {
                 child.castShadow = true;
@@ -103,7 +103,6 @@ function animate() {
 
     if(robot_idle && currentRobots <= maxRobots){
       addRandomRobot();
-    } else {
     }
 }
 
@@ -218,11 +217,26 @@ function createScene(canvas) {
 }
 
 function addRandomRobot() {
-  var newRobot = robot_idle.clone();
-  console.log(robot_idle);
-  console.log(newRobot);
+  //var newRobot = robot_idle.clone();
+  var newRobot = cloneFbx(robot_idle);
   currentRobots++;
-  newRobot.position.set(0,-4,2);
+  var p = randomPosition();
+  newRobot.position.set(p.x,-4,p.z);
+  newRobot.lookAt(0,-4,0);
   scene.add(newRobot);
-  robot_idle.position.set(0,-4,8);
+  //robot_idle.position.set(0,-4,8);
+}
+
+function randomPosition() {
+  var r = 100;
+  var definition = 3600;
+  var x = {};
+  x.x = r*Math.cos((Math.random() * 3600)*2*Math.PI/definition);
+  x.z = r*Math.sin((Math.random() * 3600)*2*Math.PI/definition);
+  return x;
+  //return {
+    //r*Math.cos((Math.random() * 3600)*2*Math.PI/definition),
+    //0,
+    //r*Math.sin((Math.random() * 3600)*2*Math.PI/definition)
+  //}
 }
