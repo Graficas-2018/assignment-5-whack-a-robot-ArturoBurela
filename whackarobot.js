@@ -14,6 +14,10 @@ var game = false;
 var gameTime = 60;
 var score = 0;
 var currentRobots = 0, maxRobots = 3;
+var clock = THREE.Clock();
+var robotsAnimations = {};
+var robots = [];
+var robotsMixers = [];
 
 var robot_mixer = {};
 var deadAnimator;
@@ -51,7 +55,7 @@ function loadFBX()
     {
         robot_mixer["idle"] = new THREE.AnimationMixer( scene );
         object.scale.set(0.02, 0.02, 0.02);
-        object.position.y -= 18;
+        object.position.y -= 4;
         object.traverse( function ( child ) {
             if ( child.isMesh ) {
                 child.castShadow = true;
@@ -61,26 +65,33 @@ function loadFBX()
         robot_idle = object;
         scene.add( robot_idle );
 
-        createDeadAnimation();
-
         robot_mixer["idle"].clipAction( object.animations[ 0 ], robot_idle ).play();
+        // ADD Animation idle
+        robotsAnimations.idle = object.animations[0];
 
         loader.load( '../models/Robot/robot_atk.fbx', function ( object )
         {
             robot_mixer["attack"] = new THREE.AnimationMixer( scene );
             robot_mixer["attack"].clipAction( object.animations[ 0 ], robot_idle ).play();
+            //createDeadAnimation();
+            // ADD Animation Attack
+            robotsAnimations.attack = object.animations[0];
         } );
 
         loader.load( '../models/Robot/robot_run.fbx', function ( object )
         {
             robot_mixer["run"] = new THREE.AnimationMixer( scene );
             robot_mixer["run"].clipAction( object.animations[ 0 ], robot_idle ).play();
+            // ADD Animation run
+            robotsAnimations.run = object.animations[0];
         } );
 
         loader.load( '../models/Robot/robot_walk.fbx', function ( object )
         {
             robot_mixer["walk"] = new THREE.AnimationMixer( scene );
             robot_mixer["walk"].clipAction( object.animations[ 0 ], robot_idle ).play();
+            // ADD Animation walk
+            robotsAnimations.walk = object.animations[0];
         } );
     } );
 }
@@ -90,6 +101,11 @@ function animate() {
     var now = Date.now();
     var deltat = now - currentTime;
     currentTime = now;
+
+    //Update animations
+    for (var robotMixer in robotsMixers) {
+      robotMixer.update(deltat * 0.001);
+    }
 
     if(robot_idle && robot_mixer[animation])
     {
@@ -101,7 +117,7 @@ function animate() {
         KF.update();
     }
 
-    if(robot_idle && currentRobots <= maxRobots){
+    if(robot_idle && robot_mixer["walk"] && currentRobots <= maxRobots){
       addRandomRobot();
     }
 }
@@ -217,26 +233,28 @@ function createScene(canvas) {
 }
 
 function addRandomRobot() {
-  //var newRobot = robot_idle.clone();
+  // Clone robot fbx
   var newRobot = cloneFbx(robot_idle);
   currentRobots++;
+  // Push to robots array
+  robots.push(newRobot);
+  // Add new animation mixer
+  var newRobotMixer = new THREE.AnimationMixer(newRobot);
+  // Idle animation as default
+  newRobotMixer.clipAction(robotsAnimations.idle).play();
+  // Set random position
   var p = randomPosition();
   newRobot.position.set(p.x,-4,p.z);
+  // Turn to the center
   newRobot.lookAt(0,-4,0);
   scene.add(newRobot);
-  //robot_idle.position.set(0,-4,8);
 }
 
 function randomPosition() {
   var r = 100;
-  var definition = 3600;
+  var d = 3600;
   var x = {};
-  x.x = r*Math.cos((Math.random() * 3600)*2*Math.PI/definition);
-  x.z = r*Math.sin((Math.random() * 3600)*2*Math.PI/definition);
+  x.x = r*Math.cos((Math.random() * d)*2*Math.PI/d);
+  x.z = r*Math.sin((Math.random() * d)*2*Math.PI/d);
   return x;
-  //return {
-    //r*Math.cos((Math.random() * 3600)*2*Math.PI/definition),
-    //0,
-    //r*Math.sin((Math.random() * 3600)*2*Math.PI/definition)
-  //}
 }
