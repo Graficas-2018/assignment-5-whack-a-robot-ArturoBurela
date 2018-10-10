@@ -52,9 +52,16 @@ function initControls()
 				createScene(canvas);
 		    // Run the run loop
 		    run();
+
+        $( "#startRestart" ).click(function() {
+          if(!game){
+            startGame();
+          } else {
+            restartGame();
+          }
+        });
 			}
 	);
-
 </script>
 
 </head>
@@ -67,6 +74,9 @@ function initControls()
   <div id="score">
     Score: 0
   </div>
+  <div id="hover">
+  </div>
+  <a id="startRestart" href="#">Start</a>
 </div>
 
 </body>

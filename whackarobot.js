@@ -11,7 +11,7 @@ var raycaster = new THREE.Raycaster();
 var mouse = new THREE.Vector2(), CLICKED;
 // Game
 var game = false;
-var gameTime = 60;
+var gameTime = 6;
 var score = 0;
 var currentRobots = 0, maxRobots = 10;
 var clock = new THREE.Clock();
@@ -66,8 +66,34 @@ function loadFBX(){
   } );
 }
 
+function startGame() {
+  game = true;
+  document.getElementById("startRestart").style.display = "none";
+}
+
+function restartGame() {
+  // Remove remaining robots
+  for (r of robots) {
+    if (!r.destroyed && !r.escaped) {
+      scene.remove(r);
+    }
+  }
+  game = true;
+  score = 0;
+  currentRobots = 0;
+  clock = new THREE.Clock()
+  robots = [];
+  robotsMixers = [];
+  robotCount = 0;
+  document.getElementById("startRestart").style.display = "none";
+}
+
 function animate() {
-  if(clock.elapsedTime > 60){
+  if(clock.elapsedTime > gameTime || !game){
+    if(game){
+        document.getElementById("startRestart").text = "Restart";
+        document.getElementById("startRestart").style.display = "block";
+    }
     return;
   }
   var delta = clock.getDelta();
@@ -91,7 +117,7 @@ function animate() {
     addRandomRobot();
   }
   // Update score and time
-  document.getElementById("score").innerHTML = "Score: " + score + "<br> Time left: " + Math.round(60-clock.elapsedTime);
+  document.getElementById("score").innerHTML = "Score: " + score + "<br> Time left: " + Math.round(gameTime-clock.elapsedTime);
 }
 
 function run() {
@@ -101,7 +127,7 @@ function run() {
   // Spin the cube for next frame
   animate();
   // Update the camera controller
-  orbitControls.update();
+  //orbitControls.update();
 }
 
 function setLightColor(light, r, g, b){
@@ -133,16 +159,17 @@ function createScene(canvas) {
   scene = new THREE.Scene();
   // Add  a camera so we can view the scene
   camera = new THREE.PerspectiveCamera( 45, canvas.width / canvas.height, 1, 4000 );
-  controls = new THREE.OrbitControls( camera );
+  /*controls = new THREE.OrbitControls( camera );
   controls.screenSpacePanning = true;
-  //controls.minDistance = 100;
-  //controls.maxDistance = 100;
-  //controls.maxPolarAngle = 0;
+  controls.minDistance = 100;
+  controls.maxDistance = 100;
+  controls.maxPolarAngle = 0;
   camera.position.z = 10;
-  controls.update();
-  camera.position.set(0, 90, 0);
+  controls.update();*/
+  camera.position.set(10, 150, 0);
+  camera.lookAt(0,-4,0);
   scene.add(camera);
-  orbitControls = new THREE.OrbitControls(camera, renderer.domElement);
+  //orbitControls = new THREE.OrbitControls(camera, renderer.domElement);
   // Create a group to hold all the objects
   root = new THREE.Object3D;
   spotLight = new THREE.SpotLight (0xffffff);
@@ -168,7 +195,7 @@ function createScene(canvas) {
   map.repeat.set(8, 8);
   var color = 0xffffff;
   // Put in a ground plane to show off the lighting
-  geometry = new THREE.PlaneGeometry(200, 200, 50, 50);
+  geometry = new THREE.PlaneGeometry(400, 400, 50, 50);
   var mesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({color:color, map:map, side:THREE.DoubleSide}));
   mesh.rotation.x = -Math.PI / 2;
   mesh.position.y = -4.02;
