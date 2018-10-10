@@ -20,3 +20,19 @@ canvas {
   left: 0;
   z-index: -1;
 }
+
+#title{
+  background-color: green;
+  float: left;
+  width: auto;
+  font-size: 1rem;
+  font-style: italic;
+}
+
+#score{
+  background-color: yellow;
+  float: right;
+  width: auto;
+  font-size: 3rem;
+  font-style: oblique;
+}

@@ -4,52 +4,36 @@ scene = null,
 camera = null,
 root = null,
 robot_idle = null,
-robot_attack = null,
 group = null,
 orbitControls = null;
 //Raycaster
 var raycaster = new THREE.Raycaster();
-var mouse = new THREE.Vector2(), INTERSECTED, CLICKED;
+var mouse = new THREE.Vector2(), CLICKED;
 // Game
 var game = false;
 var gameTime = 60;
 var score = 0;
-var currentRobots = 0, maxRobots = 3;
+var currentRobots = 0, maxRobots = 10;
 var clock = new THREE.Clock();
 var robotsAnimations = {};
 var robotsDeadAnimators = [];
 var robots = [];
 var robotsMixers = [];
 var robotCount = 0;
-// Robots
-var robot_mixer = {};
-var deadAnimator;
-var morphs = [];
 
-var duration = 20000; // ms
-var currentTime = Date.now();
+var clip;
 
-var animation = "run";
-
-function changeAnimation(animation_text){
-  animation = animation_text;
-
-  if(animation =="dead")
-  {
-    createDeadAnimation();
-  }
-  else
-  {
-    robot_idle.rotation.x = 0;
-    robot_idle.position.y = -4;
-  }
+function createDeadAnimation() {
+  const kf = new THREE.NumberKeyframeTrack( '.parent.quaternion', [ 0, 1 ], [ 0, 0, 0, 1, 0, 0, 1, 0] );
+  var kfarray = [];
+  kfarray.push(kf);
+  clip =  new THREE.AnimationClip("dead", 2, kfarray);
 }
 
 function loadFBX(){
   var loader = new THREE.FBXLoader();
   loader.load( '../models/Robot/robot_idle.fbx', function ( object )
   {
-    robot_mixer["idle"] = new THREE.AnimationMixer( scene );
     object.scale.set(0.02, 0.02, 0.02);
     object.position.y -= 4;
     object.traverse( function ( child ) {
@@ -59,32 +43,23 @@ function loadFBX(){
       }
     } );
     robot_idle = object;
-    scene.add( robot_idle );
-
-    robot_mixer["idle"].clipAction( object.animations[ 0 ], robot_idle ).play();
+    createDeadAnimation();
     // ADD Animation idle
     robotsAnimations.idle = object.animations[0];
-
     loader.load( '../models/Robot/robot_atk.fbx', function ( object )
     {
-      robot_mixer["attack"] = new THREE.AnimationMixer( scene );
-      robot_mixer["attack"].clipAction( object.animations[ 0 ], robot_idle ).play();
       // ADD Animation Attack
       robotsAnimations.attack = object.animations[0];
     } );
 
     loader.load( '../models/Robot/robot_run.fbx', function ( object )
     {
-      robot_mixer["run"] = new THREE.AnimationMixer( scene );
-      robot_mixer["run"].clipAction( object.animations[ 0 ], robot_idle ).play();
       // ADD Animation run
       robotsAnimations.run = object.animations[0];
     } );
 
     loader.load( '../models/Robot/robot_walk.fbx', function ( object )
     {
-      robot_mixer["walk"] = new THREE.AnimationMixer( scene );
-      robot_mixer["walk"].clipAction( object.animations[ 0 ], robot_idle ).play();
       // ADD Animation walk
       robotsAnimations.walk = object.animations[0];
     } );
@@ -92,43 +67,39 @@ function loadFBX(){
 }
 
 function animate() {
-
-  var now = Date.now();
-  var deltat = now - currentTime;
-  currentTime = now;
-
+  if(clock.elapsedTime > 60){
+    return;
+  }
   var delta = clock.getDelta();
-
   //Update animations
   for (var robotMixer of robotsMixers) {
-    //console.log(robotMixer);
+    // Actualizar animaciones
     robotMixer.update(delta);
   }
-
-  if(robot_idle && robot_mixer[animation])
-  {
-    robot_mixer[animation].update(deltat * 0.001);
+  //Mover robots
+  for (robot of robots) {
+    if((robot.position.z > 100 || robot.position.z < -100 || robot.position.x > 100 || robot.position.x < -100) && !robot.escaped && !robot.destroyed){
+      robot.escaped = true;
+      scene.remove(robot);
+      currentRobots--;
+    } else {
+      robot.translateZ(delta * 30);
+    }
   }
-
-  if(animation =="dead")
-  {
-    KF.update();
-  }
-
-  if(robot_idle && robot_mixer["walk"] && currentRobots <= maxRobots){
+  // Añadir robots
+  if(robot_idle && robotsAnimations.run && currentRobots <= maxRobots){
     addRandomRobot();
   }
+  // Update score and time
+  document.getElementById("score").innerHTML = "Score: " + score + "<br> Time left: " + Math.round(60-clock.elapsedTime);
 }
 
 function run() {
   requestAnimationFrame(function() { run(); });
-
   // Render the scene
   renderer.render( scene, camera );
-
   // Spin the cube for next frame
   animate();
-
   // Update the camera controller
   orbitControls.update();
 }
@@ -218,6 +189,8 @@ function addRandomRobot() {
   currentRobots++;
   // Push to robots array
   newRobot.idRobot = robotCount;
+  newRobot.destroyed = false;
+  newRobot.escaped = false;
   robotCount++;
   robots.push(newRobot);
   // Add new animation mixer
@@ -228,8 +201,8 @@ function addRandomRobot() {
   // Set random position
   var p = randomPosition();
   newRobot.position.set(p.x,-4,p.z);
-  // Turn to the center
-  newRobot.lookAt(0,-4,0);
+  // Turn randomly
+  newRobot.lookAt((Math.random() * 200)-100, -4, (Math.random() * 200)-100);
   scene.add(newRobot);
 }
 
@@ -253,35 +226,27 @@ function onDocumentMouseDown(event) {
   if ( intersects.length > 0 )
   {
     CLICKED = intersects[ 0 ].object;
+    if(CLICKED.parent.destroyed){
+      return;
+    }
+    CLICKED.parent.destroyed = true;
     //Change animation to robot
-    console.log(CLICKED);
     robotsMixers[CLICKED.parent.idRobot].stopAllAction();
-    robotsMixers[CLICKED.parent.idRobot].addEventListener( 'loop', function (e) {
-      console.log(e);
-      robotsMixers[CLICKED.parent.idRobot].enabled = false;
-      //scene.remove(CLICKED);
+    robotsMixers[CLICKED.parent.idRobot].addEventListener( 'finished', function (e) {
+      // Eliminar objecto de la escena
+      scene.remove(e.target._root);
+      // Restar robot
+      currentRobots--;
+      // Añadir puntos
+      score += 20;
     } );
-    const kf = new THREE.NumberKeyframeTrack( '.parent.quaternion', [ 0, 1 ], [ 0, 0, 0, 1, 0, 0, 1, 0] );
-    var kfarray = [];
-    kfarray.push(kf);
-    const clip =  new THREE.AnimationClip("dead", 2, kfarray);
-    robotsMixers[CLICKED.parent.idRobot].clipAction(clip).play();
-    /*if(!animator.running)
-    {
-    for(var i = 0; i<= animator.interps.length -1; i++)
-    {
-    animator.interps[i].target = CLICKED.rotation;
+    // Animacion muerte
+    robotsMixers[CLICKED.parent.idRobot].clipAction(robotsAnimations.attack).play();
+    var deadAction = robotsMixers[CLICKED.parent.idRobot].clipAction(clip);
+    deadAction.setLoop(THREE.LoopOnce);
+    deadAction.clampWhenFinished = true;
+    deadAction.play();
   }
-  playAnimations();
-}*/
-}
-else
-{
-  if ( CLICKED )
-  CLICKED.material.emissive.setHex( CLICKED.currentHex );
-
-  CLICKED = null;
-}
 }
 
 function onWindowResize() {
