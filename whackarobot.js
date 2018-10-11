@@ -11,7 +11,7 @@ var raycaster = new THREE.Raycaster();
 var mouse = new THREE.Vector2(), CLICKED;
 // Game
 var game = false;
-var gameTime = 6;
+var gameTime = 25;
 var score = 0;
 var currentRobots = 0, maxRobots = 10;
 var clock = new THREE.Clock();
@@ -141,9 +141,9 @@ function setLightColor(light, r, g, b){
 var directionalLight = null;
 var spotLight = null;
 var ambientLight = null;
-var mapUrl = "../images/checker_large.gif";
+var mapUrl = "images/Metall-pattern.jpg";
 
-var SHADOW_MAP_WIDTH = 2048, SHADOW_MAP_HEIGHT = 2048;
+var SHADOW_MAP_WIDTH = 500, SHADOW_MAP_HEIGHT = 400;
 
 function createScene(canvas) {
   // Create the Three.js renderer and attach it to our canvas
